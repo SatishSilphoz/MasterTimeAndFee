@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite thread-count="3" parallel="classes" name="Failed suite [TimeAndFees Automation Suite]" guice-stage="DEVELOPMENT">
+  <test thread-count="3" parallel="classes" name="TimeAndFees Functional Tests(failed)">
+    <classes>
+      <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Time_Runner">
+        <methods>
+          <include name="setUpClass"/>
+          <include name="runScenario" invocation-numbers="0 1"/>
+          <include name="tearDownClass"/>
+        </methods>
+      </class> <!-- com.TimeAndFees.RunnerFiles.TimeAndFees_Time_Runner -->
+      <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_AccountMenu_Runner">
+        <methods>
+          <include name="setUpClass"/>
+          <include name="runScenario" invocation-numbers="0"/>
+          <include name="tearDownClass"/>
+        </methods>
+      </class> <!-- com.TimeAndFees.RunnerFiles.TimeAndFees_AccountMenu_Runner -->
+      <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Manage_Runner">
+        <methods>
+          <include name="setUpClass"/>
+          <include name="tearDownClass"/>
+          <include name="runScenario" invocation-numbers="0"/>
+        </methods>
+      </class> <!-- com.TimeAndFees.RunnerFiles.TimeAndFees_Manage_Runner -->
+    </classes>
+  </test> <!-- TimeAndFees Functional Tests(failed) -->
+</suite> <!-- Failed suite [TimeAndFees Automation Suite] -->

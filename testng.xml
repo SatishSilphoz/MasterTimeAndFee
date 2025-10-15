@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<suite name="TimeAndFees Automation Suite" parallel="classes" thread-count="3"
+    verbose="1">
+
+    <test name="TimeAndFees Functional Tests" preserve-order="true">
+        <classes>
+
+            <!-- Account Menu -->
+            <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_AccountMenu_Runner" />
+
+               <!-- Manage -->
+            <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Manage_Runner" />
+
+
+            <!-- Time -->
+            <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Time_Runner" />
+
+         
+
+        </classes>
+    </test>
+
+</suite>
