@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
 
-<suite name="TimeAndFees Automation Suite" parallel="classes" thread-count="3"
+<suite name="TimeAndFees Automation Suite" parallel="classes" thread-count="${threads:3}"
     verbose="1">
 
     <test name="TimeAndFees Functional Tests" preserve-order="true">
@@ -10,14 +10,29 @@
             <!-- Account Menu -->
             <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_AccountMenu_Runner" />
 
-               <!-- Manage -->
+            <!-- Dashboard -->
+            <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Dashboard_Runner" />
+
+            <!-- Expenses -->
+            <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Expenses_Runner" />
+
+            <!-- Fees -->
+            <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Fees_Runner" />
+
+            <!-- Jobs -->
+            <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Jobs_Runner" />
+
+            <!-- Manage -->
             <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Manage_Runner" />
 
+            <!-- Reports -->
+            <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Reports_Runner" />
 
             <!-- Time -->
             <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Time_Runner" />
 
-         
+            <!-- Settings -->
+            <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Settings_Runner" />
 
         </classes>
     </test>
