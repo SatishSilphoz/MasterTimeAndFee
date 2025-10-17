@@ -420,7 +420,11 @@ public class JobActions {
 			optionToSelect.click();
 
 			HelperClass.sleep2(2);
-			Hooks.captureScreenshotBase64(driver, Hooks.getScenarioTest(), "Chart view for: " + text);
+//			Hooks.captureScreenshotBase64(driver, Hooks.getScenarioTest(), "Chart view for: " + text);
+//			Log.info("Selected filter: " + text, "Pratham", "Jobs Filter");
+			
+			
+			Hooks.captureScreenshotBase64(driver, Hooks.getScenarioTest(),"Chart View for"+ text);
 			Log.info("Selected filter: " + text, "Pratham", "Jobs Filter");
 		}
 	}

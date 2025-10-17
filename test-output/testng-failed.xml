@@ -10,13 +10,6 @@
           <include name="tearDownClass"/>
         </methods>
       </class> <!-- com.TimeAndFees.RunnerFiles.TimeAndFees_Time_Runner -->
-      <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_AccountMenu_Runner">
-        <methods>
-          <include name="setUpClass"/>
-          <include name="runScenario" invocation-numbers="0"/>
-          <include name="tearDownClass"/>
-        </methods>
-      </class> <!-- com.TimeAndFees.RunnerFiles.TimeAndFees_AccountMenu_Runner -->
       <class name="com.TimeAndFees.RunnerFiles.TimeAndFees_Manage_Runner">
         <methods>
           <include name="setUpClass"/>

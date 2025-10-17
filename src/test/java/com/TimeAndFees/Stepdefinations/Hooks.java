@@ -29,76 +29,58 @@ import io.cucumber.java.BeforeAll;
 import io.cucumber.java.Scenario;
 
 /**
- * Hooks class for Time and Fees module.
- * 
- * ✅ Supports ThreadLocal parallel execution
- * ✅ Groups reports Feature → Scenario (same as older modules)
- * ✅ Avoids duplicate feature nodes
- * ✅ Saves screenshots (Base64 + file)
- * ✅ Compatible with Capium365 Extent Report style
+ * Parallel-ready Hooks class.
+ * Each thread keeps its own ExtentTest and WebDriver instance.
+ * Browser quits once per Runner (AfterAll).
  */
 public class Hooks {
 
+    // Thread-safe reporting objects
     private static ExtentReports extent = ExtentService.getInstance();
-
-    // Thread-safe feature/scenario storage
-    private static ThreadLocal<ExtentTest> featureTest = new ThreadLocal<>();
     private static ThreadLocal<ExtentTest> scenarioTest = new ThreadLocal<>();
 
-    // Shared map to store created features
-    private static Map<String, ExtentTest> featureMap = new HashMap<>();
+    // Scenario-level context
+    private static ThreadLocal<Map<String, Object>> scenarioContext = ThreadLocal.withInitial(HashMap::new);
 
+    /* =========================================================
+       One-time driver setup before any scenarios start (per suite)
+       ========================================================= */
     @BeforeAll
-    public static void setup() {
-        HelperClass.setUpDriver();
-        Log.info("Driver setup successfully");
+    public static void globalSetup() {
+        Log.info("Global driver setup initialized (parallel-ready).");
         System.out.println("Starting the Test Execution...");
     }
 
+    /* =========================================================
+       Before each scenario (per thread)
+       ========================================================= */
     @Before
     public void beforeScenario(Scenario scenario) {
-        // Extract feature name from URI
-        String rawFeatureName = scenario.getUri().toString();
-        rawFeatureName = rawFeatureName.substring(rawFeatureName.lastIndexOf("/") + 1)
-                .replace(".feature", "").trim();
+        // Only create browser if not already present for this thread/runner
+        HelperClass.getDriver(); // This will only create browser if threadDriver.get() == null
 
-        // Normalize name (avoid duplicates caused by case or whitespace)
-        String normalizedFeatureName = rawFeatureName.replaceAll("\\s+", "_").toLowerCase();
+        ExtentTest test = extent.createTest("Scenario: " + scenario.getName());
+        scenarioTest.set(test);
 
-        ExtentTest feature;
-
-        synchronized (featureMap) {
-            if (featureMap.containsKey(normalizedFeatureName)) {
-                feature = featureMap.get(normalizedFeatureName);
-            } else {
-                // Display name for report (keep clean)
-                feature = extent.createTest("Feature: " + rawFeatureName);
-                featureMap.put(normalizedFeatureName, feature);
-            }
-        }
-
-        featureTest.set(feature);
-
-        // Create Scenario Node under this feature
-        ExtentTest scenarioNode = feature.createNode("Scenario: " + scenario.getName());
-        scenarioTest.set(scenarioNode);
-
+        Log.info("Starting Scenario: " + scenario.getName());
         System.out.println("Starting Scenario: " + scenario.getName());
-        Log.info("Scenario: " + scenario.getName());
     }
 
+    /* =========================================================
+       Capture screenshot after each step (thread-safe)
+       ========================================================= */
     @AfterStep
     public void afterStep(Scenario scenario) {
         WebDriver driver = HelperClass.getDriver();
         ExtentTest test = scenarioTest.get();
-        String stepName = StepTracker.getCurrentStep();
 
+        String stepName = StepTracker.getCurrentStep();
         if (stepName == null || stepName.isEmpty()) {
             stepName = "Unnamed Step";
         }
 
         try {
-            String base64Screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BASE64);
+            String base64Screenshot = ((TakesScreenshot) HelperClass.getDriver()).getScreenshotAs(OutputType.BASE64);
 
             if (scenario.isFailed()) {
                 scenario.attach(Base64.getDecoder().decode(base64Screenshot), "image/png", stepName);
@@ -107,7 +89,7 @@ public class Hooks {
                 Log.info("Captured screenshot for failed step: " + stepName);
             } else {
                 test.log(Status.PASS, stepName);
-                Log.info("Step passed: " + stepName);
+                Log.info("Captured screenshot for passed step: " + stepName);
             }
 
         } catch (Exception e) {
@@ -115,6 +97,9 @@ public class Hooks {
         }
     }
 
+    /* =========================================================
+       After each scenario (logout but keep driver until runner ends)
+       ========================================================= */
     @After
     public void afterScenario(Scenario scenario) {
         WebDriver driver = HelperClass.getDriver();
@@ -129,27 +114,32 @@ public class Hooks {
                 Log.info("Scenario Passed: " + scenario.getName());
             }
 
-            // Logout after each scenario
+            // Only logout, do NOT close browser here
             try {
-                LoginActions loginPage = PageFactory.initElements(driver, LoginActions.class);
+                LoginActions loginPage = PageFactory.initElements(HelperClass.getDriver(), LoginActions.class);
                 loginPage.Logout();
                 Log.info("Successfully logged out after scenario.");
             } catch (Exception e) {
-                Log.error("Logout failed after scenario: " + e.getMessage());
+                Log.warn("Logout not required or failed: " + e.getMessage());
             }
 
         } catch (Exception e) {
             Log.error("Error in afterScenario: " + e.getMessage());
+        } finally {
+            // clear scenario context for this thread
+            scenarioContext.get().clear();
         }
     }
 
+    /* =========================================================
+       After all scenarios of the Runner (quit browser per runner)
+       ========================================================= */
     @AfterAll
-    public static void tearDown() {
-        System.out.println("Ending Test Execution...");
-
+    public static void afterAllScenarios() {
+        System.out.println("Ending Test Execution for Runner...");
         try {
-            HelperClass.tearDown();
-            Log.info("Browser closed successfully.");
+            HelperClass.tearDown();  // closes only current thread's driver
+            Log.info("Browser closed successfully for this runner.");
         } catch (Exception e) {
             Log.error("Error during browser teardown: " + e.getMessage());
         }
@@ -162,17 +152,10 @@ public class Hooks {
         }
     }
 
-    // Get current scenario ExtentTest (thread-safe)
-    public static ExtentTest getScenarioTest() {
-        return scenarioTest.get();
-    }
+    /* =========================================================
+       Extra Utilities (same as before)
+       ========================================================= */
 
-    public static ExtentTest getFeatureTest() {
-        return featureTest.get();
-    }
-    
-    
-    
     public static void captureScreenshotBase64(WebDriver driver, ExtentTest test, String message) {
         try {
             String base64Screenshot = ((TakesScreenshot) HelperClass.getDriver()).getScreenshotAs(OutputType.BASE64);
@@ -184,37 +167,28 @@ public class Hooks {
         }
     }
 
-    // Utility for screenshot
-    public static void captureScreenshot(String screenshotName, Scenario scenario, ExtentTest scenarioTest) {
+    public static void captureScreenshot(String screenshotName, Scenario scenario, ExtentTest test) {
         try {
             WebDriver driver = HelperClass.getDriver();
-            TakesScreenshot ts = (TakesScreenshot) driver;
+            TakesScreenshot ts = (TakesScreenshot) HelperClass.getDriver();
 
-            // Attach PNG to Cucumber
             byte[] screenshotBytes = ts.getScreenshotAs(OutputType.BYTES);
             scenario.attach(screenshotBytes, "image/png", screenshotName);
 
-            // Attach Base64 to Extent
             String base64Screenshot = ts.getScreenshotAs(OutputType.BASE64);
-            scenarioTest.log(Status.INFO, "Screenshot: " + screenshotName,
+            test.log(Status.INFO, "Screenshot: " + screenshotName,
                     MediaEntityBuilder.createScreenCaptureFromBase64String(base64Screenshot).build());
 
-            // Save locally
             File screenshotFile = ts.getScreenshotAs(OutputType.FILE);
-            String filePath = System.getProperty("user.dir") + "/screenshots/"
-                    + screenshotName + "_" + System.currentTimeMillis() + ".png";
+            String filePath = System.getProperty("user.dir") + "/screenshots/" +
+                    screenshotName + "_" + System.currentTimeMillis() + ".png";
             FileUtils.copyFile(screenshotFile, new File(filePath));
 
             Log.info("Saved screenshot: " + filePath);
-
         } catch (Exception e) {
             Log.error("Failed to capture screenshot: " + e.getMessage());
-            System.out.println("Screenshot error: " + e.getMessage());
         }
     }
-
-    // Thread-safe context map per scenario
-    private static ThreadLocal<Map<String, Object>> scenarioContext = ThreadLocal.withInitial(HashMap::new);
 
     public static void setScenarioContext(String key, Object value) {
         scenarioContext.get().put(key, value);
@@ -226,5 +200,15 @@ public class Hooks {
 
     public static void clearScenarioContext() {
         scenarioContext.get().clear();
+    }
+
+    public static ExtentTest getScenarioTest() {
+        return scenarioTest.get();
+    }
+
+    public static void DetailsInfo(String message) {
+        ExtentTest test = scenarioTest.get();
+        test.log(Status.INFO, message);
+        Log.info(message);
     }
 }
